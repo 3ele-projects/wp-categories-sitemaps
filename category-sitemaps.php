@@ -93,9 +93,9 @@ class XMLSitemapCreator {
         
         foreach ($categories as $category) {
         	$sitemap = '<?xml version="1.0" encoding="UTF-8"?>';
-        	$sitemap .= "/n".'<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">';
+        	$sitemap .= "\n".'<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">';
             $update_time = date("Y-m-d");
-            $sitemap .= "\t" . '<url>' . "\n" .
+            $sitemap .= "\n \t" . '<url>' . "\n" .
             "\t\t" . '<loc>/' . get_category_link($category) . '</loc>' .
             "\n\t\t" . '<lastmod>' . $update_time . '</lastmod>' .
             "\n\t" . '</url>' . "\n";
@@ -197,18 +197,18 @@ class XMLSitemapCreator {
         $update_time = date('Y-m-d');
         $filename = "Master";
         $master_sitemap = '<?xml version="1.0" encoding="UTF-8"?>';
-        $master_sitemap .= "\n ".'<urlset xmlns="https://www.sitemaps.org/schemas/sitemap/0.9">';
-        $master_sitemap .= "\n \t".'<sitemapindex>';
+        $master_sitemap .= "\n ".'<sitemapindex xmlns="https://www.sitemaps.org/schemas/sitemap/0.9">';
+      //  $master_sitemap .= "\n \t".'<sitemapindex>';
         foreach($files as $sitemap):
             if($sitemap !='Master-sitemap.xml'): 
-                $master_sitemap .="\n \t \t".'<sitemap>';
-                $master_sitemap .="\n \t \t \t".'<loc>'.$sitemap.'</loc>';
-                $master_sitemap .="\n \t \t \t".'<lastmod>'.$update_time.'</lastmod>';
-                $master_sitemap .="\n \t \t".'</sitemap>';  
+                $master_sitemap .="\n \t ".'<sitemap>';
+                $master_sitemap .="\n \t  \t".'<loc>'.$sitemap.'</loc>';
+                $master_sitemap .="\n \t  \t".'<lastmod>'.$update_time.'</lastmod>';
+                $master_sitemap .="\n  \t".'</sitemap>';  
             endif;    
         endforeach;   
         $master_sitemap.= "\n \t".'</sitemapindex>';
-        $master_sitemap.= "\n".'</urlset>';
+     //   $master_sitemap.= "\n".'</urlset>';
         
         $sitemap = $this->cts_create_file($filename,$master_sitemap);
     }
