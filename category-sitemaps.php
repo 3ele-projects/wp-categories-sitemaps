@@ -193,6 +193,7 @@ class XMLSitemapCreator {
     }
 
     public function create_master_sitemap(){
+	$url = get_bloginfo('url');  
         $files = glob('*sitemap.xml');
         $update_time = date('Y-m-d');
         $filename = "Master";
@@ -202,7 +203,7 @@ class XMLSitemapCreator {
         foreach($files as $sitemap):
             if($sitemap !='Master-sitemap.xml'): 
                 $master_sitemap .="\n \t ".'<sitemap>';
-                $master_sitemap .="\n \t  \t".'<loc>'.$sitemap.'</loc>';
+                $master_sitemap .="\n \t  \t".'<loc>'.$url.'/'.$sitemap.'</loc>';
                 $master_sitemap .="\n \t  \t".'<lastmod>'.$update_time.'</lastmod>';
                 $master_sitemap .="\n  \t".'</sitemap>';  
             endif;    
