@@ -18,7 +18,6 @@ defined( 'ABSPATH' ) or die( 'Are you ok?' );
 $xml_sitemap_creator = new XMLSitemapCreator();
 
 class XMLSitemapCreator {
-
     public function __construct() {
 
         /* register and activation wp-cron */
@@ -28,8 +27,8 @@ class XMLSitemapCreator {
         register_deactivation_hook(__FILE__, array( $this, 'cts_update_xml_files_deactivation' ) ); 
 
         /* hook in actions */
-        add_action( 'cts_update_xml_files', array( $this, 'cts_fetch_all_posts' ) );
-     /*   add_action( 'publish_post', array( $this,'cts_fetch_all_posts') );  */
+       add_action( 'cts_update_xml_files', array( $this, 'cts_fetch_all_posts' ) );
+        add_action( 'publish_post', array( $this,'cts_fetch_all_posts') );  
         add_action( 'save_post', array( $this,'cts_fetch_all_posts') ); 
 
 	}
@@ -81,7 +80,6 @@ class XMLSitemapCreator {
         }
     }
     public function cts_fetch_all_posts(){
-        
         $now = time();
         $sitemaps =array();
         $news_posts = array();
@@ -91,17 +89,17 @@ class XMLSitemapCreator {
             'exclude' => 1,
         )  );
 
-        $sitemap = '<?xml version="1.0" encoding="UTF-8"?>';
-        $sitemap .= "/n".'<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">';
+
         
         foreach ($categories as $category) {
+        	$sitemap = '<?xml version="1.0" encoding="UTF-8"?>';
+        	$sitemap .= "/n".'<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">';
             $update_time = date("Y-m-d");
             $sitemap .= "\t" . '<url>' . "\n" .
             "\t\t" . '<loc>/' . get_category_link($category) . '</loc>' .
             "\n\t\t" . '<lastmod>' . $update_time . '</lastmod>' .
             "\n\t" . '</url>' . "\n";
-
-            $posts_for_sitemap = get_posts( array(
+            $posts_for_sitemap   = get_posts( array(
                 'numberposts' => -1,
                 'orderby' => 'modified',
                 'order' => 'DESC',
@@ -109,9 +107,8 @@ class XMLSitemapCreator {
                 'post_status' => 'publish',    
                 'post_type' => array( 'post' )
             ));
-
-            foreach( $posts_for_sitemap as $post ) {
-                setup_postdata( $post );
+            foreach($posts_for_sitemap as $post ) {
+                setup_postdata ( $post );
                 $postdate = explode( " ", $post->post_modified );
                 $sitemap .= "\t" . '<url>' . "\n" .
                     "\t\t" . '<loc>' . get_permalink( $post->ID ) . '</loc>' .
@@ -122,25 +119,13 @@ class XMLSitemapCreator {
                     $news_posts[$post->ID] = $post;
                 }
 
-                $filtered_mime_types = array();
-
-                    foreach( get_allowed_mime_types() as $key => $type ):
-                        if( false === strpos( $type, 'image' ) )
-                            $filtered_mime_types[] = $type;
-                    endforeach;
-
-                    $args = array(
-                        'post_type' => array( 'attachment' ),
-                        'posts_per_page' => -1,
-                        'post_status' => 'any',
-                        'post_parent' => $post->ID,
-
-                        'post_mime_type' => implode( ',', $filtered_mime_types )
-                    );
-                    $results =  new WP_Query( $args );
-                    if ($results->have_posts()){
+         
+                    $args = array('post_type'=>'attachment','numberposts'=>null,'post_status'=>null, 'post_parent' => $post->ID);
+                    $attachments = get_posts($args);
+                     if($attachments){
                         $post_images[$post->ID] = $post;
-                    }
+                       }
+                   
             }
 
             $sitemap .= '</urlset>';
@@ -154,11 +139,12 @@ class XMLSitemapCreator {
         }
 
         /* create_news_sitemap */
+        $this->create_image_sitemap($post_images);  
+
         $this->create_news_sitemap($news_posts);
         /* create_image_sitemap */
-        $this->create_image_sitemap($post_images);  
         /* create_master_sitemap */
-        $this->create_master_sitemap($sitemaps);   
+        $this->create_master_sitemap();   
     }
 
 
@@ -180,14 +166,8 @@ class XMLSitemapCreator {
 
     public function create_image_sitemap($posts) {
 
-        $filtered_mime_types = array();
 
-        foreach( get_allowed_mime_types() as $key => $type ):
-            if( false === strpos( $type, 'image' ) )
-                $filtered_mime_types[] = $type;
-        endforeach;
-
-        $filename = 'image';
+        $filename = 'Image';
         $publication_name = get_bloginfo('name');
         $publication_language = get_bloginfo('language');
 		$xml_sitemap_images  = '<?xml version="1.0" encoding="UTF-8"?>' . "\n";
@@ -196,22 +176,16 @@ class XMLSitemapCreator {
 
   
             $postdate = explode( " ", $post->post_modified );
-            $xml_sitemap_images .= "\n \t".'<url>'."\n \t \t".'<loc>'.$this->cts_escape_xml_entities(get_permalink($post->ID)); get_permalink().'</loc>'."\n \t \t";
+            $xml_sitemap_images .= "\t".'<url>'."\n \t \t".'<loc>'.$this->cts_escape_xml_entities(get_permalink($post->ID)).'</loc>';
             
-      
-            $args = array(
-                'post_type' => 'attachment',
-                'posts_per_page' => -1,
-                'post_status' => 'any',
-                'post_parent' => $post->ID,
-                'post_mime_type' => implode( ',', $filtered_mime_types )
-            );
-            $images_objs = get_posts( $args );
-            foreach ($images_objs as $post){
-                $xml_sitemap_images .='<image:image>'."\n \t \t \t \t".'<image:loc>'."\n \t \t \t \t".$post->ID.'</image:loc>'."\n \t \t \t \t".'</image:image>';
-                $xml_sitemap_images .= "\n \t".'</url>'."\n".'';
+            $args = array('post_type'=>'attachment','numberposts'=>null,'post_status'=>null, 'post_parent' => $post->ID);
+            $attachments = get_posts($args);
+             if($attachments){
+            foreach ($attachments as $attachment){
+                $xml_sitemap_images .="\n \t".'<image:image>'."\n \t \t \t \t".'<image:loc>'.$attachment->guid.'</image:loc>'."\n \t \t \t".'</image:image>';
+                $xml_sitemap_images .= "\n \t".'</url>';
             }
-          
+        }
         endforeach;
         $xml_sitemap_images .= '</urlset>';
         $sitemap = $this->cts_create_file($filename,$xml_sitemap_images);
@@ -221,12 +195,12 @@ class XMLSitemapCreator {
     public function create_master_sitemap(){
         $files = glob('*sitemap.xml');
         $update_time = date('Y-m-d');
-        $filename = "master";
+        $filename = "Master";
         $master_sitemap = '<?xml version="1.0" encoding="UTF-8"?>';
-        $master_sitemap .= "\n ".'<urlset xmlns="https://www.sitemaps.org/schemas/sitemap/0.9" xmlns:n="https://www.google.com/schemas/sitemap-news/0.9">';
+        $master_sitemap .= "\n ".'<urlset xmlns="https://www.sitemaps.org/schemas/sitemap/0.9">';
         $master_sitemap .= "\n \t".'<sitemapindex>';
         foreach($files as $sitemap):
-            if($sitemap !='master-sitemap.xml'): 
+            if($sitemap !='Master-sitemap.xml'): 
                 $master_sitemap .="\n \t \t".'<sitemap>';
                 $master_sitemap .="\n \t \t \t".'<loc>'.$sitemap.'</loc>';
                 $master_sitemap .="\n \t \t \t".'<lastmod>'.$update_time.'</lastmod>';
